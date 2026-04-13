@@ -4,33 +4,41 @@ import yfinance as yf
 app = Flask(__name__)
 
 STOCKS = {
-    'SPX': '^GSPC',
-    'NVDA': 'NVDA',
-    'MSFT': 'MSFT',
-    'AAPL': 'AAPL',
-    'TSLA': 'TSLA',
-    'IBIT': 'IBIT'
+    'SPX':  ('^GSPC',  'S&P 500'),
+    'NVDA': ('NVDA',   'NVIDIA'),
+    'MSFT': ('MSFT',   'Microsoft'),
+    'AAPL': ('AAPL',   'Apple'),
+    'TSLA': ('TSLA',   'Tesla'),
+    'IBIT': ('IBIT',   'iShares Bitcoin Trust'),
 }
 
 def get_stock_data(ticker):
     try:
         stock = yf.Ticker(ticker)
-        info = stock.info
-        full_name = info.get('longName', ticker)
-        price = info.get('currentPrice', info.get('regularMarketPrice', 'N/A'))
-        return {'name': full_name, 'price': price}
+        info = stock.fast_info
+        price = info.get('last_price') or info.get('lastPrice') or 'N/A'
+        
+        # Get previous day close using history
+        hist = stock.history(period="2d")
+        prev_close = 'N/A'
+        if len(hist) >= 2:
+            prev_close = hist.iloc[0]['Close']
+        
+        # fast_info doesn't have longName, fall back to ticker symbol
+        return {'name': ticker, 'price': round(price, 2) if isinstance(price, float) else price, 'prev_close': round(prev_close, 2) if isinstance(prev_close, float) else prev_close}
     except Exception:
-        return {'name': ticker, 'price': 'N/A'}
+        return {'name': ticker, 'price': 'N/A', 'prev_close': 'N/A'}
 
 @app.route('/')
 def index():
     stock_data = []
-    for ticker, yf_ticker in STOCKS.items():
+    for ticker, (yf_ticker, full_name) in STOCKS.items():
         data = get_stock_data(yf_ticker)
         stock_data.append({
             'ticker': ticker,
-            'name': data['name'],
-            'price': data['price']
+            'name': full_name,
+            'price': data['price'],
+            'prev_close': data['prev_close']
         })
     return render_template('index.html', stocks=stock_data)
 
