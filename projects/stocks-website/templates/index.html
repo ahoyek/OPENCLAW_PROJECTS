@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stocks</title>
+    <title>Stock Prices</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +17,7 @@
             padding: 40px 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
         h1 {
@@ -39,12 +39,12 @@
         .stocks-table th {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 16px;
             text-align: left;
             font-weight: 600;
         }
         .stocks-table td {
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-bottom: 1px solid #eee;
         }
         .stocks-table tr:last-child td {
@@ -61,12 +61,27 @@
             color: #666;
         }
         .price {
-            font-weight: 600;
+            font-weight: 700;
             color: #667eea;
         }
         .prev-close {
             font-weight: 500;
             color: #888;
+        }
+        .ohlc {
+            font-size: 0.8rem;
+        }
+        .ohlc span {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .ohlc strong {
+            color: #666;
+            font-weight: 500;
+        }
+        .ohlc-value {
+            color: #667eea;
+            font-weight: 600;
         }
         .refresh {
             text-align: center;
@@ -86,7 +101,8 @@
                         <th>Ticker</th>
                         <th>Full Name</th>
                         <th>Latest Price</th>
-                        <th>Previous Day Close</th>
+                        <th>Previous Close</th>
+                        <th>OHLC (Open, High, Low, Close)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,8 +110,18 @@
                     <tr>
                         <td class="ticker">{{ stock.ticker }}</td>
                         <td class="name">{{ stock.name }}</td>
-                        <td class="price">${{ "{:.2f}".format(stock.price) if stock.price != 'N/A' else 'N/A' }}</td>
-                        <td class="prev-close">${{ "{:.2f}".format(stock.prev_close) if stock.prev_close != 'N/A' else 'N/A' }}</td>
+                        <td class="price">${{ "{:.2f}".format(stock.price) if stock.price != 'N/A' and stock.price is not none else 'N/A' }}</td>
+                        <td class="prev-close">${{ "{:.2f}".format(stock.prev_close) if stock.prev_close != 'N/A' and stock.prev_close is not none else 'N/A' }}</td>
+                        <td class="ohlc">
+                            {% if stock.ohlc.open != 'N/A' and stock.ohlc.open is not none %}
+                            <span><strong>O:</strong> <span class="ohlc-value">${{ stock.ohlc.open }}</span></span>
+                            <span><strong>H:</strong> <span class="ohlc-value">${{ stock.ohlc.high }}</span></span>
+                            <span><strong>L:</strong> <span class="ohlc-value">${{ stock.ohlc.low }}</span></span>
+                            <span><strong>C:</strong> <span class="ohlc-value">${{ stock.ohlc.close }}</span></span>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
