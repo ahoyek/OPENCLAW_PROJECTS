@@ -3,131 +3,772 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prices</title>
+    <title>ProTrade | Real-Time Market Data</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+        
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: #13192b;
+            --bg-hover: #1a2035;
+            --text-primary: #e0e6ed;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: #2d3748;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-dark);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 20px;
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: white;
-            text-align: center;
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
-            font-size: 2.5rem;
-        }
-        .stocks-table {
-            background: white;
+            padding: 20px;
+            background: var(--bg-card);
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+        
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--accent-green);
+        }
+        
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-hover);
+            border-radius: 20px;
+        }
+        
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .ticker-feed {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
             overflow: hidden;
         }
-        .stocks-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .stocks-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        
+        .ticker-header {
             padding: 16px;
-            text-align: left;
-            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
         }
-        .stocks-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #eee;
+        
+        .ticker-header h3 {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .stocks-table tr:last-child td {
-            border-bottom: none;
+        
+        .ticker-content {
+            padding: 12px;
+            display: flex;
+            overflow-x: auto;
+            gap: 30px;
         }
-        .stocks-table tbody tr:hover {
-            background: #f8f9fa;
+        
+        .ticker-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
-        .ticker {
-            font-weight: 600;
-            color: #333;
-        }
-        .name {
-            color: #666;
-        }
-        .price {
+        
+        .ticker-symbol {
             font-weight: 700;
-            color: #667eea;
+            color: var(--accent-blue);
         }
-        .prev-close {
-            font-weight: 500;
-            color: #888;
-        }
-        .ohlc {
-            font-size: 0.8rem;
-        }
-        .ohlc span {
-            display: inline-block;
-            margin-right: 10px;
-        }
-        .ohlc strong {
-            color: #666;
-            font-weight: 500;
-        }
-        .ohlc-value {
-            color: #667eea;
+        
+        .ticker-price {
+            font-size: 1.2rem;
             font-weight: 600;
         }
-        .refresh {
-            text-align: center;
-            margin-top: 20px;
-            color: white;
+        
+        .ticker-change {
             font-size: 0.9rem;
+        }
+        
+        .price-up { color: var(--accent-green); }
+        .price-down { color: var(--accent-red); }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 968px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+        
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-btn {
+            background: var(--bg-hover);
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .chart-btn:hover, .chart-btn.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+        
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .stock-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stock-card.skeleton {
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background: var(--bg-card); }
+            50% { background: var(--bg-hover); }
+            100% { background: var(--bg-card); }
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stock-symbol {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .stock-name {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .stock-price {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .stock-change {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+        }
+        
+        .stock-stats {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 8px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .stat-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .stat-value.up { color: var(--accent-green); }
+        .stat-value.down { color: var(--accent-red); }
+        
+        .aside-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+        }
+        
+        .panel h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+        }
+        
+        .market-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .summary-item {
+            flex: 1;
+        }
+        
+        .summary-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .summary-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        .trading-hours {
+            margin-top: 12px;
+        }
+        
+        .hour-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .hour-row:last-child { border-bottom: none; }
+        
+        .hour-label { color: var(--text-secondary); font-size: 0.9rem; }
+        .hour-status { font-weight: 600; color: var(--accent-green); }
+        
+        .chart-canvas {
+            height: 250px;
+            width: 100%;
+        }
+        
+        .last-update {
+            text-align: center;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .update-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s;
+        }
+        
+        .update-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 50px rgba(59, 130, 246, 0.6);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .market-indicator {
+            text-align: center;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-top: 24px;
+        }
+        
+        .indicator-value {
+            font-size: 1.5rem;
+            font-weight: 700;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Stock Prices</h1>
-        <div class="stocks-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Ticker</th>
-                        <th>Full Name</th>
-                        <th>Latest Price</th>
-                        <th>Previous Close</th>
-                        <th>OHLC (Open, High, Low, Close)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stock in stocks %}
-                    <tr>
-                        <td class="ticker">{{ stock.ticker }}</td>
-                        <td class="name">{{ stock.name }}</td>
-                        <td class="price">${{ "{:.2f}".format(stock.price) if stock.price != 'N/A' and stock.price is not none else 'N/A' }}</td>
-                        <td class="prev-close">${{ "{:.2f}".format(stock.prev_close) if stock.prev_close != 'N/A' and stock.prev_close is not none else 'N/A' }}</td>
-                        <td class="ohlc">
-                            {% if stock.ohlc.open != 'N/A' and stock.ohlc.open is not none %}
-                            <span><strong>O:</strong> <span class="ohlc-value">${{ stock.ohlc.open }}</span></span>
-                            <span><strong>H:</strong> <span class="ohlc-value">${{ stock.ohlc.high }}</span></span>
-                            <span><strong>L:</strong> <span class="ohlc-value">${{ stock.ohlc.low }}</span></span>
-                            <span><strong>C:</strong> <span class="ohlc-value">${{ stock.ohlc.close }}</span></span>
-                            {% else %}
-                            N/A
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="header">
+        <h1><i class="fa-solid fa-chart-line"></i> ProTrade</h1>
+        <div class="status">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span class="status-text">LIVE MARKET</span>
+            </div>
         </div>
-        <p class="refresh">Data refreshed on page load</p>
     </div>
+    
+    <div class="ticker-feed">
+        <div class="ticker-header">
+            <h3><i class="fa-solid fa-tachometer-fast"></i> Real-Time Ticker</h3>
+        </div>
+        <div class="ticker-content" id="ticker-feed">
+            <!-- Ticker items will be populated here -->
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title"><i class="fa-solid fa-chart-pie"></i> Market Overview</h3>
+                <div class="chart-controls">
+                    <button class="chart-btn active">1D</button>
+                    <button class="chart-btn">1W</button>
+                    <button class="chart-btn">1M</button>
+                    <button class="chart-btn">1Y</button>
+                </div>
+            </div>
+            <canvas id="market-chart" class="chart-canvas"></canvas>
+        </div>
+        
+        <aside class="aside-panel">
+            <div class="panel">
+                <h3><i class="fa-solid fa-signal"></i> Market Summary</h3>
+                <div class="market-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Top Gainer</div>
+                        <div class="summary-value price-up" id="top-gainer">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Top Loser</div>
+                        <div class="summary-value price-down" id="top-loser">--</div>
+                    </div>
+                </div>
+                <div class="market-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Total Volume</div>
+                        <div class="summary-value" id="total-volume">--</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Market Cap</div>
+                        <div class="summary-value" id="market-cap">--</div>
+                    </div>
+                </div>
+                
+                <div class="trading-hours">
+                    <div class="hour-row">
+                        <span class="hour-label">US Market</span>
+                        <span class="hour-status" id="us-market-status">● Open</span>
+                    </div>
+                    <div class="hour-row">
+                        <span class="hour-label">Asia Market</span>
+                        <span class="hour-status" id="asia-market-status">● Closed</span>
+                    </div>
+                    <div class="hour-row">
+                        <span class="hour-label">Europe Market</span>
+                        <span class="hour-status" id="europe-market-status">● Open</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3><i class="fa-solid fa-clock"></i> Market Status</h3>
+                <div style="text-align: center; padding: 16px;">
+                    <div class="summary-label" style="margin-bottom: 8px;">Last Update</div>
+                    <div class="summary-value" id="last-update-time">--:--</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+    
+    <div class="stocks-grid" id="stocks-container">
+        <!-- Stock cards will be populated here -->
+    </div>
+    
+    <button class="update-btn" id="refresh-btn">
+        <i class="fa-solid fa-rotate-right"></i>
+    </button>
+    
+    <div class="footer">
+        <p>© 2026 ProTrade | Real-Time Market Data Platform</p>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Stock data
+        const stocks = [
+            { ticker: 'SPX', name: 'S&P 500' },
+            { ticker: 'NVDA', name: 'NVIDIA' },
+            { ticker: 'MSFT', name: 'Microsoft' },
+            { ticker: 'AAPL', name: 'Apple' },
+            { ticker: 'TSLA', name: 'Tesla' },
+            { ticker: 'IBIT', name: 'iShares Bitcoin Trust' },
+            { ticker: 'BTC', name: 'Bitcoin' }
+        ];
+        
+        // Chart instance
+        let chart = null;
+        
+        // Fetch stock data function
+        async function fetchStocks() {
+            try {
+                const response = await fetch('/api/stocks');
+                const data = await response.json();
+                updateUI(data.data);
+            } catch (error) {
+                console.error('Error fetching stocks:', error);
+            }
+        }
+        
+        // Create skeleton cards for instant loading
+        function createSkeletonCards() {
+            const container = document.getElementById('stocks-container');
+            let html = '';
+            
+            stocks.forEach(stock => {
+                html += `
+                    <div class="stock-card skeleton">
+                        <div style="height: 40px; margin-bottom: 16px;"></div>
+                        <div style="height: 30px; margin-bottom: 12px;"></div>
+                        <div style="height: 50px; margin-bottom: 16px;"></div>
+                        <div style="display: grid; gap: 8px;">
+                            <div style="height: 20px;"></div>
+                            <div style="height: 20px;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Update UI with real data
+        function updateUI(data) {
+            const container = document.getElementById('stocks-container');
+            
+            // Update stocks grid
+            let html = '';
+            data.forEach(stock => {
+                const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                    ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
+                    : 'N/A';
+                
+                const isUp = priceChange !== 'N/A' && parseFloat(priceChange) >= 0;
+                const arrow = isUp ? '↑' : '↓';
+                const priceClass = priceChange !== 'N/A' && parseFloat(priceChange) >= 0 ? 'up' : 'down';
+                const sign = priceChange !== 'N/A' && parseFloat(priceChange) >= 0 ? '+' : '';
+                
+                html += `
+                    <div class="stock-card" data-ticker="${stock.ticker}">
+                        <div class="stock-header">
+                            <div class="stock-info">
+                                <span class="stock-symbol">${stock.ticker}</span>
+                                <span class="stock-name">${stock.name}</span>
+                            </div>
+                        </div>
+                        <div class="stock-price">$${typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price}</div>
+                        <div class="stock-change">
+                            <span class="${priceClass}">${sign}${priceChange}%</span>
+                            <span>${arrow}</span>
+                        </div>
+                        <div class="stock-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Previous Close</span>
+                                <span class="stat-value">$${typeof stock.prev_close === 'number' ? stock.prev_close.toFixed(2) : stock.prev_close}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Open</span>
+                                <span class="stat-value">$${stock.ohlc.open}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Update ticker feed
+            updateTickerFeed(data.data);
+            
+            // Update market summary
+            updateMarketSummary(data.data);
+            
+            // Update chart
+            updateChart(data.data);
+        }
+        
+        // Update ticker feed
+        function updateTickerFeed(data) {
+            const container = document.getElementById('ticker-feed');
+            let html = '';
+            
+            data.forEach(stock => {
+                const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                    ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
+                    : 'N/A';
+                
+                const isUp = priceChange !== 'N/A' && parseFloat(priceChange) >= 0;
+                
+                html += `
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">${stock.ticker}</span>
+                        <div class="ticker-price">$${typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price}</div>
+                        <div class="ticker-change ${isUp ? 'price-up' : 'price-down'}">
+                            ${priceChange !== 'N/A' ? `${priceChange}%` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Update market summary
+        function updateMarketSummary(data) {
+            if (data.length === 0) return;
+            
+            const upStocks = data.filter(s => {
+                if (!s.prev_close || s.price === 'N/A') return false;
+                const change = ((s.price - s.prev_close) / s.prev_close * 100);
+                return change > 0;
+            });
+            
+            const downStocks = data.filter(s => {
+                if (!s.prev_close || s.price === 'N/A') return false;
+                const change = ((s.price - s.prev_close) / s.prev_close * 100);
+                return change < 0;
+            });
+            
+            if (upStocks.length > 0) {
+                const topGainer = upStocks.reduce((a, b) => {
+                    if (a.prev_close === 'N/A' || b.prev_close === 'N/A') return a;
+                    const aChange = (a.price - a.prev_close) / a.prev_close * 100;
+                    const bChange = (b.price - b.prev_close) / b.prev_close * 100;
+                    return aChange > bChange ? a : b;
+                });
+                
+                document.getElementById('top-gainer').textContent = `${topGainer.ticker} (${(Math.abs((topGainer.price - topGainer.prev_close) / topGainer.prev_close * 100)).toFixed(2)}%)`;
+            }
+            
+            if (downStocks.length > 0) {
+                const topLoser = downStocks.reduce((a, b) => {
+                    if (a.prev_close === 'N/A' || b.prev_close === 'N/A') return a;
+                    const aChange = (a.price - a.prev_close) / a.prev_close * 100;
+                    const bChange = (b.price - b.prev_close) / b.prev_close * 100;
+                    return aChange < bChange ? a : b;
+                });
+                
+                document.getElementById('top-loser').textContent = `${topLoser.ticker} (${(Math.abs((topLoser.price - topLoser.prev_close) / topLoser.prev_close * 100)).toFixed(2)}%)`;
+            }
+            
+            // Update time
+            const now = new Date();
+            document.getElementById('last-update-time').textContent = now.toLocaleTimeString();
+        }
+        
+        // Update chart
+        function updateChart(data) {
+            const ctx = document.getElementById('market-chart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Prepare data
+            const labels = data.map(s => s.ticker);
+            const prices = data.map(s => typeof s.price === 'number' ? s.price : 0);
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Price ($)',
+                        data: prices,
+                        backgroundColor: prices.map((p, i) => {
+                            if (data[i].prev_close === 'N/A' || data[i].price === 'N/A') return '#3b82f6';
+                            const change = ((p - data[i].prev_close) / data[i].prev_close * 100);
+                            return change >= 0 ? '#10b981' : '#ef4444';
+                        }),
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#13192b',
+                            titleColor: '#e0e6ed',
+                            bodyColor: '#e0e6ed',
+                            borderColor: '#2d3748',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#2d3748' },
+                            ticks: {
+                                color: '#94a3b8',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createSkeletonCards();
+            fetchStocks();
+            
+            // Update ticker feed with SSE
+            const eventSource = new EventSource('/api/ticker');
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateTickerFeed(data);
+                    
+                    // Update stocks grid without full refresh
+                    data.forEach(stock => {
+                        const card = document.querySelector(`.stock-card[data-ticker="${stock.ticker}"]`);
+                        if (card) {
+                            const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                                ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
+                                : 'N/A';
+                            
+                            const isUp = priceChange !== 'N/A' && parseFloat(priceChange) >= 0;
+                            const arrow = isUp ? '↑' : '↓';
+                            const priceClass = priceChange !== 'N/A' && parseFloat(priceChange) >= 0 ? 'up' : 'down';
+                            const sign = priceChange !== 'N/A' && parseFloat(priceChange) >= 0 ? '+' : '';
+                            
+                            const priceDiv = card.querySelector('.stock-price');
+                            if (priceDiv) {
+                                priceDiv.textContent = '$' + (typeof stock.price === 'number' ? stock.price.toFixed(2) : stock.price);
+                            }
+                            
+                            const changeDiv = card.querySelector('.stock-change');
+                            if (changeDiv) {
+                                changeDiv.innerHTML = `<span class="${priceClass}">${sign}${priceChange}%</span><span>${arrow}</span>`;
+                            }
+                        }
+                    });
+                    
+                    // Update chart
+                    updateChart(data);
+                } catch (e) {
+                    console.error('Error processing ticker data:', e);
+                }
+            };
+            
+            eventSource.onerror = function() {
+                console.error('SSE connection error');
+            };
+            
+            // Refresh button
+            document.getElementById('refresh-btn').addEventListener('click', fetchStocks);
+        });
+    </script>
 </body>
 </html>
