@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingApp1 | Professional Trading Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: #13192b;
+            --bg-hover: #1a2035;
+            --text-primary: #e0e6ed;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: #2d3748;
+            --chart-bg: rgba(19, 25, 43, 0.8);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .brand-icon i {
+            color: white;
+            font-size: 20px;
+        }
+        
+        .brand-text h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .brand-text span {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Ticker Bar */
+        .ticker-bar {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .ticker-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        
+        .ticker-content {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .ticker-content::-webkit-scrollbar {
+            height: 4px;
+        }
+        
+        .ticker-content::-webkit-scrollbar-track {
+            background: var(--bg-hover);
+        }
+        
+        .ticker-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+        
+        .ticker-item {
+            min-width: 140px;
+            background: var(--bg-hover);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        
+        .ticker-item:hover {
+            transform: translateY(-2px);
+            background: #232b45;
+        }
+        
+        .ticker-symbol {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .ticker-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .ticker-price {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .ticker-change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .ticker-change.up {
+            color: var(--accent-green);
+        }
+        
+        .ticker-change.down {
+            color: var(--accent-red);
+        }
+        
+        /* Main Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+        
+        /* Chart Section */
+        .chart-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .timeframe-btn {
+            background: var(--bg-hover);
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .timeframe-btn.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+        
+        /* Watchlist Section */
+        .watchlist-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .watchlist-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .watchlist-item:last-child {
+            border-bottom: none;
+        }
+        
+        .watchlist-info {
+            flex: 1;
+        }
+        
+        .watchlist-symbol {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .watchlist-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .watchlist-price {
+            text-align: right;
+        }
+        
+        .watchlist-current {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .watchlist-change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-hover) 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-text {
+            height: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .skeleton-price {
+            height: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .skeleton-chart {
+            height: 350px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 968px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="brand-text">
+                <h1>TradingApp1</h1>
+                <span>Professional Trading Dashboard</span>
+            </div>
+        </div>
+        <div class="market-status">
+            <div class="status-indicator"></div>
+            <span class="status-text">Market Open</span>
+        </div>
+    </header>
+
+    <!-- Live Ticker -->
+    <section class="ticker-bar">
+        <div class="ticker-title">LIVE MARKET TICKER</div>
+        <div class="ticker-content" id="tickerContent">
+            <!-- Ticker items will be loaded here -->
+        </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard-grid">
+        <!-- Chart Section -->
+        <section class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title" id="chartTitle">S&P 500 - 30 Day Performance</h2>
+                <div class="chart-controls">
+                    <button class="timeframe-btn active" data-timeframe="1d">1D</button>
+                    <button class="timeframe-btn" data-timeframe="5d">5D</button>
+                    <button class="timeframe-btn" data-timeframe="1mo">1M</button>
+                    <button class="timeframe-btn" data-timeframe="30d">30D</button>
+                    <button class="timeframe-btn" data-timeframe="1y">1Y</button>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Watchlist Section -->
+        <aside class="watchlist-section">
+            <h2 class="watchlist-title">Watchlist</h2>
+            <div id="watchlistContent">
+                <!-- Watchlist items will be loaded here -->
+            </div>
+        </aside>
+    </main>
+
+    <!-- Loading Screen (Hidden by default) -->
+    <div id="loadingScreen" style="display: none; position: fixed; inset: 0; background: var(--bg-dark); z-index: 999;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div class="brand-icon" style="width: 60px; height: 60px; margin-bottom: 24px;">
+                <i class="fa-solid fa-chart-line" style="font-size: 30px;"></i>
+            </div>
+            <h2 class="skeleton-text" style="width: 180px; height: 32px; margin-bottom: 32px;"></h2>
+            <div class="skeleton-chart" style="width: 600px; margin-bottom: 24px;"></div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                <div class="skeleton" style="width: 140px; height: 80px;"></div>
+                <div class="skeleton" style="width: 140px; height: 80px;"></div>
+                <div class="skeleton" style="width: 140px; height: 80px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TradingApp1 Data
+        const TICKER_DATA = {
+            SPX: { name: 'S&P 500 Index', symbol: '^GSPC' },
+            BTC: { name: 'Bitcoin USD', symbol: 'BTC-USD' },
+            USO: { name: 'United States Oil Fund', symbol: 'USO' },
+            TSLA: { name: 'Tesla, Inc.', symbol: 'TSLA' },
+            NVDA: { name: 'NVIDIA Corporation', symbol: 'NVDA' }
+        };
+
+        // DOM Elements
+        const tickerContent = document.getElementById('tickerContent');
+        const watchlistContent = document.getElementById('watchlistContent');
+        const loadingScreen = document.getElementById('loadingScreen');
+
+        // Initialize Chart
+        let mainChart;
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#94a3b8';
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)');
+        
+        mainChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Price',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 500 },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1a2035',
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 12 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#2d3748', drawBorder: false },
+                        ticks: { maxTicksLimit: 6 }
+                    },
+                    y: {
+                        grid: { color: '#2d3748', drawBorder: false },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Load Data
+        async function loadData() {
+            try {
+                const response = await fetch('/api/stocks');
+                const data = await response.json();
+                
+                // Populate Ticker
+                populateTicker(data.data);
+                
+                // Populate Watchlist
+                populateWatchlist(data.data);
+                
+                // Update Chart (default to SPX)
+                updateChart('SPX', data.data);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function populateTicker(data) {
+            tickerContent.innerHTML = '';
+            
+            data.forEach(item => {
+                const changeClass = item.change >= 0 ? 'up' : 'down';
+                const arrow = item.change >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+                const arrowColor = item.change >= 0 ? '#10b981' : '#ef4444';
+                
+                const tickerItem = document.createElement('div');
+                tickerItem.className = 'ticker-item';
+                tickerItem.onclick = () => updateChart(item.ticker, data);
+                
+                tickerItem.innerHTML = `
+                    <div class="ticker-symbol">${item.ticker}</div>
+                    <div class="ticker-name">${item.name}</div>
+                    <div class="ticker-price">$${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div class="ticker-change ${changeClass}">
+                        <i class="fa-solid ${arrow}" style="color: ${arrowColor};"></i>
+                        ${Math.abs(item.change_pct)}%
+                    </div>
+                `;
+                
+                tickerContent.appendChild(tickerItem);
+            });
+        }
+
+        function populateWatchlist(data) {
+            watchlistContent.innerHTML = '';
+            
+            data.forEach(item => {
+                const changeClass = item.change >= 0 ? 'up' : 'down';
+                
+                const watchlistItem = document.createElement('div');
+                watchlistItem.className = 'watchlist-item';
+                
+                watchlistItem.innerHTML = `
+                    <div class="watchlist-info">
+                        <div class="watchlist-symbol">${item.ticker}</div>
+                        <div class="watchlist-name">${item.name}</div>
+                    </div>
+                    <div class="watchlist-price">
+                        <div class="watchlist-current">$${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div class="watchlist-change ${changeClass}">
+                            ${item.change >= 0 ? '+' : ''}${item.change} (${Math.abs(item.change_pct)}%)
+                        </div>
+                    </div>
+                `;
+                
+                watchlistContent.appendChild(watchlistItem);
+            });
+        }
+
+        function updateChart(ticker, allData) {
+            // Update chart title
+            const stock = allData.find(s => s.ticker === ticker);
+            document.getElementById('chartTitle').textContent = `${stock.name} - 30 Day Performance`;
+            
+            // Get chart data (would normally fetch from /api/history)
+            const stockData = allData.find(s => s.ticker === ticker);
+            
+            // Generate mock chart data for demo
+            const prices = [];
+            let currentPrice = stockData.price;
+            const days = 30;
+            
+            for (let i = days; i >= 1; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                prices.push({
+                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    close: currentPrice
+                });
+                
+                // Add some volatility
+                currentPrice += (Math.random() - 0.5) * (currentPrice * 0.02);
+            }
+            
+            mainChart.data.labels = prices.map(p => p.date);
+            mainChart.data.datasets[0].data = prices.map(p => p.close);
+            
+            // Update gradient color based on trend
+            const isUp = prices[prices.length - 1].close >= prices[0].close;
+            const colorHex = isUp ? '#3b82f6' : '#ef4444';
+            const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+            gradient.addColorStop(0, `rgba(${isUp ? '16, 185, 129' : '239, 68, 68'}, 0.5)`);
+            gradient.addColorStop(1, `rgba(${isUp ? '16, 185, 129' : '239, 68, 68'}, 0.05)`);
+            mainChart.data.datasets[0].backgroundColor = gradient;
+            mainChart.data.datasets[0].borderColor = colorHex;
+            
+            mainChart.update();
+        }
+
+        // Skeleton Loading
+        function showSkeleton() {
+            loadingScreen.style.display = 'block';
+            
+            setTimeout(() => {
+                loadData();
+                loadingScreen.style.display = 'none';
+                
+                // Start real-time ticker
+                startTickerStream();
+            }, 1500);
+        }
+
+        // Real-time Ticker via SSE
+        function startTickerStream() {
+            if (!window.EventSource) return;
+            
+            const source = new EventSource('/api/ticker');
+            
+            source.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Update ticker prices without full reload
+                    data.forEach(item => {
+                        const tickerEl = Array.from(document.querySelectorAll('.ticker-item'))
+                            .find(el => el.querySelector('.ticker-symbol')?.textContent === item.ticker);
+                        
+                        if (tickerEl) {
+                            const priceEl = tickerEl.querySelector('.ticker-price');
+                            const changeEl = tickerEl.querySelector('.ticker-change');
+                            
+                            if (priceEl) {
+                                priceEl.textContent = `$${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                            }
+                            
+                            if (changeEl) {
+                                const changeClass = item.change >= 0 ? 'up' : 'down';
+                                changeEl.className = `ticker-change ${changeClass}`;
+                                
+                                const arrowIcon = changeEl.querySelector('.fa-solid');
+                                if (arrowIcon) {
+                                    arrowIcon.className = `fa-solid ${item.change >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}`;
+                                    arrowIcon.style.color = item.change >= 0 ? '#10b981' : '#ef4444';
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Update watchlist
+                    data.forEach(item => {
+                        const watchlistEl = Array.from(document.querySelectorAll('.watchlist-item'))
+                            .find(el => el.querySelector('.watchlist-symbol')?.textContent === item.ticker);
+                        
+                        if (watchlistEl) {
+                            const priceEl = watchlistEl.querySelector('.watchlist-current');
+                            const changeEl = watchlistEl.querySelector('.watchlist-change');
+                            
+                            if (priceEl) {
+                                priceEl.textContent = `$${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                            }
+                            
+                            if (changeEl) {
+                                const changeClass = item.change >= 0 ? 'up' : 'down';
+                                changeEl.className = `watchlist-change ${changeClass}`;
+                            }
+                        }
+                    });
+                    
+                } catch (e) {
+                    console.error('SSE error:', e);
+                }
+            };
+            
+            source.onerror = function(e) {
+                console.error('SSE connection error:', e);
+            };
+        }
+
+        // Timeframe buttons
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const timeframe = this.dataset.timeframe;
+                console.log('Timeframe changed to:', timeframe);
+                // In a real app, fetch chart data based on timeframe
+            });
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', showSkeleton);
+    </script>
+</body>
+</html>
