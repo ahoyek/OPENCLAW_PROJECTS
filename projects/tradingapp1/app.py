@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, Response
+from flask import Flask, render_template, jsonify, Response, request
 import yfinance as yf
 import pandas as pd
 from functools import lru_cache
