@@ -539,7 +539,7 @@
             // Update stocks grid
             let html = '';
             data.forEach(stock => {
-                const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                const priceChange = stock.prev_close !== 'N/A' && stock.price !== 'N/A' && stock.prev_close != 0
                     ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
                     : 'N/A';
                 
@@ -593,7 +593,7 @@
             let html = '';
             
             data.forEach(stock => {
-                const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                const priceChange = stock.prev_close !== 'N/A' && stock.price !== 'N/A' && stock.prev_close != 0
                     ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
                     : 'N/A';
                 
@@ -618,13 +618,13 @@
             if (data.length === 0) return;
             
             const upStocks = data.filter(s => {
-                if (!s.prev_close || s.price === 'N/A') return false;
+                if (s.prev_close === 'N/A' || s.price === 'N/A') return false;
                 const change = ((s.price - s.prev_close) / s.prev_close * 100);
                 return change > 0;
             });
             
             const downStocks = data.filter(s => {
-                if (!s.prev_close || s.price === 'N/A') return false;
+                if (s.prev_close === 'N/A' || s.price === 'N/A') return false;
                 const change = ((s.price - s.prev_close) / s.prev_close * 100);
                 return change < 0;
             });
@@ -734,7 +734,7 @@
                     data.forEach(stock => {
                         const card = document.querySelector(`.stock-card[data-ticker="${stock.ticker}"]`);
                         if (card) {
-                            const priceChange = stock.prev_close && stock.price !== 'N/A' 
+                            const priceChange = stock.prev_close !== 'N/A' && stock.price !== 'N/A' && stock.prev_close != 0
                                 ? ((stock.price - stock.prev_close) / stock.prev_close * 100).toFixed(2)
                                 : 'N/A';
                             

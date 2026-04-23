@@ -32,7 +32,13 @@ def get_stock_data_cached(ticker):
         hist = stock.history(period="1d")
         
         # Try fast_info first, fall back to history
-        price = getattr(info, 'last_price', None) or getattr(info, 'lastPrice', None)
+        # Use camelCase keys from fast_info (snake_case triggers API calls that may fail)
+        price = None
+        try:
+            price = info.get('lastPrice')
+        except Exception:
+            pass
+        
         if price is None and len(hist) > 0:
             price = hist.iloc[-1]['Close']
         
@@ -51,16 +57,31 @@ def get_stock_data_cached(ticker):
         # Get previous day close
         hist2 = stock.history(period="2d")
         prev_close = 'N/A'
-        if len(hist2) >= 2:
+        if len(hist2) >= 2 and not pd.isna(hist2.iloc[0]['Close']):
             prev_close = round(hist2.iloc[0]['Close'], 2)
+        
+        # Calculate daily change and percent change
+        change = 'N/A'
+        pct_change = 'N/A'
+        if isinstance(price, (int, float)) and prev_close != 'N/A':
+            change = round(float(price) - float(prev_close), 2)
+            pct_change = round((change / float(prev_close)) * 100, 2) if float(prev_close) != 0 else 'N/A'
         
         return {
             'price': round(price, 2) if isinstance(price, (int, float)) else price,
             'prev_close': prev_close,
+            'change': change,
+            'pct_change': pct_change,
             'ohlc': ohlc
         }
     except Exception:
-        return {'price': 'N/A', 'prev_close': 'N/A', 'ohlc': {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}}
+        return {
+            'price': 'N/A',
+            'prev_close': 'N/A', 
+            'change': 'N/A',
+            'pct_change': 'N/A',
+            'ohlc': {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}
+        }
 
 
 @app.route('/')
@@ -163,7 +184,7 @@ def get_stats():
                 'high_52w': round(hist['High'].max(), 2),
                 'low_52w': round(hist['Low'].min(), 2),
                 'volume': int(hist['Volume'].iloc[-1]) if not pd.isna(hist['Volume'].iloc[-1]) else 0,
-                'market_cap': stock.info.get('marketCap', 0) if hasattr(stock, 'info') else 0
+                'market_cap': 'N/A'
             }
     
     # BTC stats
@@ -175,7 +196,7 @@ def get_stats():
             'high_52w': round(btc_hist['High'].max(), 2),
             'low_52w': round(btc_hist['Low'].min(), 2),
             'volume': int(btc_hist['Volume'].iloc[-1]) if not pd.isna(btc_hist['Volume'].iloc[-1]) else 0,
-            'market_cap': btc.info.get('marketCap', 0) if hasattr(btc, 'info') else 0
+            'market_cap': 'N/A'
         }
     
     return jsonify(stats)
