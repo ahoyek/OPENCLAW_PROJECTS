@@ -435,6 +435,108 @@
             font-weight: 700;
         }
         
+        /* Bottom News Section */
+        .news-section {
+            margin-top: 32px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .news-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .news-header-row h3 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .news-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .refresh-news-btn {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .refresh-news-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .news-item-card {
+            background: var(--bg-hover);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+        
+        .news-item-card:hover {
+            background: var(--bg-card);
+            transform: translateY(-2px);
+        }
+        
+        .news-item-source {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .news-item-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .news-item-title {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+        
+        .news-item-title a {
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .news-item-title a:hover {
+            color: var(--accent-blue);
+        }
+        
+        .news-item-link {
+            font-size: 0.8rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        
+        .news-item-link:hover {
+            text-decoration: underline;
+        }
 
     </style>
 </head>
@@ -525,6 +627,22 @@
     <div class="stocks-grid" id="stocks-container">
         <!-- Stock cards will be populated here -->
     </div>
+    
+    <!-- Bottom News Section -->
+    <section class="news-section">
+        <div class="news-header-row">
+            <h3><i class="fa-solid fa-newspaper"></i> Market News</h3>
+            <div class="news-controls">
+                <span id="news-last-update" class="news-time">Last updated: --</span>
+                <button class="refresh-news-btn" id="refresh-news">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="news-grid" id="news-container">
+            <!-- News items will be populated here -->
+        </div>
+    </section>
     
     <button class="update-btn" id="refresh-btn">
         <i class="fa-solid fa-rotate-right"></i>
@@ -866,6 +984,53 @@
             // Initial news fetch and then every 4 minutes
             setTimeout(fetchNews, 1000);
             setInterval(fetchNews, 4 * 60 * 1000);
+            
+            // Fetch and display news in bottom section
+            function fetchBottomNews() {
+                const container = document.getElementById('news-container');
+                if (!container) return;
+                
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('news-last-update').textContent = 'Last updated: ' + now.toLocaleTimeString();
+                
+                // Clear container
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 20px;">Loading latest market news...</div>';
+                
+                // Fetch news for all tickers
+                Promise.all(stocks.map(stock =>
+                    fetch(`/api/news/${stock.ticker}`)
+                        .then(res => res.json())
+                        .catch(() => ({ news: [] }))
+                ))
+                .then(results => {
+                    const allNews = results.flat().filter(item => item && item.title && !item.title.includes('error'));
+                    
+                    if (allNews.length === 0) {
+                        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 20px;">No recent news available</div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = allNews.map(item => `
+                        <div class="news-item-card">
+                            ${item.time ? `<div class="news-item-time">${item.time}</div>` : ''}
+                            <a href="${item.url}" class="news-item-title" target="_blank">${item.title}</a>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => {
+                    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 20px;">Error loading news</div>';
+                    console.error('News fetch error:', err);
+                });
+            }
+            
+            // Initial bottom news fetch
+            setTimeout(fetchBottomNews, 1500);
+            // Refresh every 5 minutes
+            setInterval(fetchBottomNews, 5 * 60 * 1000);
+            
+            // Refresh button for bottom news
+            document.getElementById('refresh-news').addEventListener('click', fetchBottomNews);
             
             // Refresh button
             document.getElementById('refresh-btn').addEventListener('click', fetchStocks);

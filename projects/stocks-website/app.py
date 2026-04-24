@@ -219,8 +219,70 @@ def generate():
         time.sleep(CACHE_TIMEOUT)
 
 
+def fetch_rss_news(ticker, feed_url):
+    """Fetch news from RSS feed for a ticker"""
+    try:
+        import feedparser
+        
+        # Replace placeholder in URL with ticker
+        url = feed_url.replace('{ticker}', ticker)
+        
+        # Parse RSS feed
+        feed = feedparser.parse(url)
+        
+        news_items = []
+        for entry in feed.entries[:5]:
+            # Clean up the title
+            title = entry.get('title', 'No title')
+            
+            # Get link
+            link = entry.get('link', '')
+            
+            # Get published date (format nicely)
+            published = entry.get('published', '')
+            
+            news_items.append({
+                'title': title,
+                'url': link,
+                'time': published
+            })
+        
+        return news_items if news_items else [{'title': 'No recent news available', 'url': '', 'time': ''}]
+    
+    except Exception as e:
+        return [{'title': 'News loading error', 'url': '', 'time': ''}]
+
+
+def fetch_yahoo_finance_news(ticker):
+    """Fetch news from Yahoo Finance using their RSS feed"""
+    try:
+        import feedparser
+        
+        # Yahoo Finance RSS feed for ticker news
+        rss_url = f"https://finance.yahoo.com/rss/headline?s={ticker}"
+        
+        feed = feedparser.parse(rss_url)
+        
+        news_items = []
+        for entry in feed.entries[:5]:
+            title = entry.get('title', 'No title')
+            link = entry.get('link', '')
+            published = entry.get('published', '')
+            
+            news_items.append({
+                'title': title,
+                'url': link,
+                'time': published
+            })
+        
+        return news_items if news_items else [{'title': 'No recent news available', 'url': '', 'time': ''}]
+    
+    except Exception as e:
+        return [{'title': 'News loading error', 'url': '', 'time': ''}]
+
+
 def fetch_news(ticker):
-    """Fetch news for a ticker from Yahoo Finance using BeautifulSoup"""
+    """Fetch news for a ticker - try RSS first, then fallback"""
     global NEWS_CACHE
     
     current_time = time.time()
@@ -228,26 +290,14 @@ def fetch_news(ticker):
         return NEWS_CACHE[ticker]['news']
     
     try:
-        # Get the yfinance ticker object
-        stock = yf.Ticker(ticker)
-        info = stock.fast_info
+        # Try Yahoo Finance RSS feed
+        news_items = fetch_yahoo_finance_news(ticker)
         
-        news_items = []
-        
-        # Try to get recent headlines using yfinance's fast_info if available
-        try:
-            if hasattr(info, 'short_name') or True:  # Basic check
-                news_items = [
-                    {'title': 'Loading latest news...', 'url': f'https://finance.yahoo.com/quote/{ticker}', 'time': ''},
-                    {'title': f'{ticker} stock analysis and news', 'url': f'https://finance.yahoo.com/quote/{ticker}/news', 'time': ''},
-                ]
-        except:
-            pass
-        
-        # Fallback: If we have news_items, return them; otherwise use default
-        if not news_items:
+        if not news_items or (len(news_items) == 1 and 'error' in news_items[0].get('title', '').lower()):
+            # Fallback to simple response if RSS fails
             news_items = [
-                {'title': 'No recent news available', 'url': '', 'time': ''}
+                {'title': f'Recent {ticker} stock news', 'url': f'https://finance.yahoo.com/quote/{ticker}/news', 'time': ''},
+                {'title': f'{ticker} market updates', 'url': f'https://finance.yahoo.com/quote/{ticker}', 'time': ''},
             ]
         
         # Cache the result
