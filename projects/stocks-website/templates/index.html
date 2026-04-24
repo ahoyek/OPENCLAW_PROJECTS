@@ -280,6 +280,55 @@
         .stat-value.up { color: var(--accent-green); }
         .stat-value.down { color: var(--accent-red); }
         
+        .stock-news {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .news-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .news-loading {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .news-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        
+        .news-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        
+        .news-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .news-link:hover {
+            text-decoration: underline;
+        }
+        
         .aside-panel {
             display: flex;
             flex-direction: column;
@@ -385,6 +434,8 @@
             font-size: 1.5rem;
             font-weight: 700;
         }
+        
+
     </style>
 </head>
 <body>
@@ -570,6 +621,12 @@
                                 <span class="stat-label">Open</span>
                                 <span class="stat-value">$${stock.ohlc.open}</span>
                             </div>
+                        </div>
+                    </div>
+                    <div class="stock-news" id="news-${stock.ticker.toLowerCase()}">
+                        <div class="news-header">
+                            <span class="news-label"><i class="fa-solid fa-newspaper"></i> News</span>
+                            <span class="news-loading">Loading...</span>
                         </div>
                     </div>
                 `;
@@ -765,6 +822,47 @@
             eventSource.onerror = function() {
                 console.error('SSE connection error');
             };
+            
+            // Fetch news for each stock every 4 minutes
+            function fetchNews() {
+                stocks.forEach(stock => {
+                    fetch(`/api/news/${stock.ticker}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            // Update news section for this ticker
+                            const newsContainer = document.getElementById(`news-${stock.ticker.toLowerCase()}`);
+                            if (newsContainer && data.news) {
+                                // Show loading until we have data
+                                const newsLoading = newsContainer.querySelector('.news-loading');
+                                if (newsLoading) {
+                                    const loadingSpan = newsContainer.querySelector('.news-loading');
+                                    if (loadingSpan) {
+                                        loadingSpan.textContent = 'Latest';
+                                    }
+                                }
+                                newsContainer.innerHTML = data.news.map(item => `
+                                    <div class="news-item">
+                                        ${item.time ? `<div class="news-time">${item.time}</div>` : ''}
+                                        <a href="${item.url}" class="news-link" target="_blank">${item.title}</a>
+                                    </div>
+                                `).join('');
+                            }
+                        })
+                        .catch(err => {
+                            const newsContainer = document.getElementById(`news-${stock.ticker.toLowerCase()}`);
+                            if (newsContainer) {
+                                const loadingSpan = newsContainer.querySelector('.news-loading');
+                                if (loadingSpan) {
+                                    loadingSpan.textContent = 'Error';
+                                }
+                            }
+                        });
+                });
+            }
+            
+            // Initial news fetch and then every 4 minutes
+            setTimeout(fetchNews, 1000);
+            setInterval(fetchNews, 4 * 60 * 1000);
             
             // Refresh button
             document.getElementById('refresh-btn').addEventListener('click', fetchStocks);

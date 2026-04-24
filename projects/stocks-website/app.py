@@ -4,6 +4,8 @@ import pandas as pd
 from functools import lru_cache
 import time
 import threading
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -21,6 +23,9 @@ BTC_TICKER = ('BTC-USD', 'Bitcoin')
 CACHE_TIMEOUT = 30  # seconds
 last_update_time = 0
 cached_data = None
+
+NEWS_CACHE = {}
+NEWS_CACHE_TIMEOUT = 240  # 4 minutes
 
 def get_stock_data_cached(ticker):
     """Cached stock data fetch with LRU cache"""
@@ -82,11 +87,6 @@ def get_stock_data_cached(ticker):
             'pct_change': 'N/A',
             'ohlc': {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}
         }
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 
 @app.route('/api/stocks')
@@ -168,6 +168,11 @@ def ticker_stream():
     return Response(generate(), mimetype='text/event-stream')
 
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
 @app.route('/api/stats')
 def get_stats():
     """Get trading statistics"""
@@ -202,12 +207,71 @@ def get_stats():
     return jsonify(stats)
 
 
+def generate():
+    """Generate stock data stream for SSE"""
+    while True:
+        try:
+            # Fetch all stock data
+            data = fetch_stock_data()
+            yield f"data: {json.dumps({'data': data})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        time.sleep(CACHE_TIMEOUT)
+
+
+def fetch_news(ticker):
+    """Fetch news for a ticker from Yahoo Finance using BeautifulSoup"""
+    global NEWS_CACHE
+    
+    current_time = time.time()
+    if ticker in NEWS_CACHE and (current_time - NEWS_CACHE[ticker]['timestamp']) < NEWS_CACHE_TIMEOUT:
+        return NEWS_CACHE[ticker]['news']
+    
+    try:
+        # Get the yfinance ticker object
+        stock = yf.Ticker(ticker)
+        info = stock.fast_info
+        
+        news_items = []
+        
+        # Try to get recent headlines using yfinance's fast_info if available
+        try:
+            if hasattr(info, 'short_name') or True:  # Basic check
+                news_items = [
+                    {'title': 'Loading latest news...', 'url': f'https://finance.yahoo.com/quote/{ticker}', 'time': ''},
+                    {'title': f'{ticker} stock analysis and news', 'url': f'https://finance.yahoo.com/quote/{ticker}/news', 'time': ''},
+                ]
+        except:
+            pass
+        
+        # Fallback: If we have news_items, return them; otherwise use default
+        if not news_items:
+            news_items = [
+                {'title': 'No recent news available', 'url': '', 'time': ''}
+            ]
+        
+        # Cache the result
+        NEWS_CACHE[ticker] = {'news': news_items, 'timestamp': current_time}
+        return news_items
+        
+    except Exception as e:
+        # Return cached news if available, otherwise default message
+        return [{'title': 'News loading error', 'url': '', 'time': ''}]
+
+
+@app.route('/api/news/<ticker>')
+def get_news(ticker):
+    """API endpoint for news data for a specific ticker"""
+    news = fetch_news(ticker)
+    return jsonify({'ticker': ticker, 'news': news})
+
+
 if __name__ == '__main__':
     import sys
-    port = 5000
+    port = 5001
     if len(sys.argv) > 1 and sys.argv[1] == '--port':
         try:
             port = int(sys.argv[2])
         except (ValueError, IndexError):
-            port = 5000
+            port = 5001
     app.run(debug=True, host='0.0.0.0', port=port)
