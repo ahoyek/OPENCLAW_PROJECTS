@@ -785,7 +785,7 @@
             eventSource.onmessage = function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    updateTickerFeed(data);
+                    updateTickerFeed(data.data);
                     
                     // Update stocks grid without full refresh
                     data.forEach(stock => {
@@ -822,6 +822,9 @@
             eventSource.onerror = function() {
                 console.error('SSE connection error');
             };
+            
+            // Initial ticker feed update
+            updateTickerFeed(stocks);
             
             // Fetch news for each stock every 4 minutes
             function fetchNews() {
