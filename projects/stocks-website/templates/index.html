@@ -1004,7 +1004,18 @@
                         .catch(() => ({ news: [] }))
                 ))
                 .then(results => {
-                    const allNews = results.flat().filter(item => item && item.title && !item.title.includes('error'));
+                    // results is [{ticker: 'NVDA', news: [...]}, ...]
+                    // Extract all news items
+                    const allNews = [];
+                    results.forEach(r => {
+                        if (r && r.news) {
+                            r.news.forEach(item => {
+                                if (item && item.title && !item.title.includes('error')) {
+                                    allNews.push(item);
+                                }
+                            });
+                        }
+                    });
                     
                     if (allNews.length === 0) {
                         container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 20px;">No recent news available</div>';
