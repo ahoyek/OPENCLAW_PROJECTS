@@ -241,6 +241,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
         
         .watchlist-title {
@@ -323,6 +324,31 @@
         @media (max-width: 968px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .dashboard-grid {
+                gap: 15px;
+            }
+            
+            .chart-container {
+                height: 280px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-grid {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .chart-container {
+                height: 250px;
             }
         }
         
@@ -450,7 +476,10 @@
                     fill: true,
                     tension: 0.4,
                     pointRadius: 0,
-                    pointHoverRadius: 6
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
@@ -459,7 +488,11 @@
                 animation: { duration: 500 },
                 interaction: {
                     intersect: false,
-                    mode: 'index'
+                    mode: 'nearest'
+                },
+                hover: {
+                    intersect: false,
+                    mode: 'single'
                 },
                 plugins: {
                     legend: { display: false },

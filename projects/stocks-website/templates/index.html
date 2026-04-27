@@ -174,6 +174,43 @@
         .chart-controls {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .indicator-toggles {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .indicator-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .indicator-btn:hover {
+            background: var(--bg-card);
+        }
+        
+        .indicator-btn.active {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .indicator-btn.macd.active {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
         }
         
         .chart-btn {
@@ -538,6 +575,64 @@
             text-decoration: underline;
         }
 
+        /* Technical Indicators Controls */
+        .indicator-controls {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .indicator-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .indicator-toggle:hover {
+            background: var(--bg-card);
+        }
+
+        .indicator-toggle.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent-blue);
+        }
+
+        .indicator-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-blue);
+        }
+
+        /* Legend for chart indicators */
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
     </style>
 </head>
 <body>
@@ -564,14 +659,48 @@
         <div class="chart-container">
             <div class="chart-header">
                 <h3 class="chart-title"><i class="fa-solid fa-chart-pie"></i> Market Overview</h3>
-                <div class="chart-controls">
-                    <button class="chart-btn active">1D</button>
-                    <button class="chart-btn">1W</button>
-                    <button class="chart-btn">1M</button>
-                    <button class="chart-btn">1Y</button>
-                </div>
+                    <!-- Chart Controls -->
+                    <div class="chart-controls">
+                        <button class="chart-btn active" data-timeframe="1D">1D</button>
+                        <button class="chart-btn" data-timeframe="1W">1W</button>
+                        <button class="chart-btn" data-timeframe="1M">1M</button>
+                        <button class="chart-btn" data-timeframe="1Y">1Y</button>
+                    </div>
+                    <!-- Indicator Toggles -->
+                    <div class="indicator-toggles">
+                        <button class="indicator-btn active" id="toggle-ma-btn" data-periods="5,10,20,50">
+                            <span class="indicator-dot" style="background: #3b82f6;"></span>
+                            MA
+                        </button>
+                        <button class="indicator-btn macd active" id="toggle-macd-btn">
+                            <span class="indicator-dot" style="background: #f59e0b;"></span>
+                            MACD
+                        </button>
+                    </div>
             </div>
             <canvas id="market-chart" class="chart-canvas"></canvas>
+            
+            <!-- Technical Indicators Controls -->
+            <div class="indicator-controls">
+                <label class="indicator-toggle active" title="Moving Average (5, 10, 20, 50 periods)">
+                    <input type="checkbox" class="indicator-checkbox" id="toggle-ma-checkbox" checked>
+                    <span>MA</span>
+                </label>
+                <label class="indicator-toggle active" title="MACD (12, 26, 9 periods)">
+                    <input type="checkbox" class="indicator-checkbox" id="toggle-macd-checkbox" checked>
+                    <span>MACD</span>
+                </label>
+            </div>
+            
+            <!-- Chart Legend -->
+            <div class="chart-legend" id="chart-legend">
+                <div class="legend-item"><div class="legend-color" style="background: #3b82f6"></div><span>Price</span></div>
+                <div class="legend-item" id="legend-ma-5" style="display:none;"><div class="legend-color" style="background: #8b5cf6"></div><span>MA 5</span></div>
+                <div class="legend-item" id="legend-ma-10" style="display:none;"><div class="legend-color" style="background: #d946ef"></div><span>MA 10</span></div>
+                <div class="legend-item" id="legend-ma-20" style="display:none;"><div class="legend-color" style="background: #ec4899"></div><span>MA 20</span></div>
+                <div class="legend-item" id="legend-ma-50" style="display:none;"><div class="legend-color" style="background: #f43f5e"></div><span>MA 50</span></div>
+                <div class="legend-item" id="legend-macd" style="display:none;"><div class="legend-color" style="background: #10b981"></div><span>MACD</span></div>
+            </div>
         </div>
         
         <aside class="aside-panel">
@@ -667,7 +796,169 @@
         
         // Chart instance
         let chart = null;
+        let showMA = false;
+        let maPeriods = [5, 10, 20, 50];
+        let showMACD = false;
         
+        // Calculate Moving Average
+        function calculateMA(data, period) {
+            const ma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    ma.push(null);
+                } else {
+                    let sum = 0;
+                    for (let j = 0; j < period; j++) {
+                        sum += data[i - j];
+                    }
+                    ma.push(sum / period);
+                }
+            }
+            return ma;
+        }
+        
+        // Calculate MACD
+        function calculateMACD(data) {
+            const ema = (period) => {
+                const k = 2 / (period + 1);
+                let emaValues = [];
+                for (let i = 0; i < data.length; i++) {
+                    if (i === 0) {
+                        emaValues.push(data[i]);
+                    } else {
+                        emaValues.push(data[i] * k + emaValues[i - 1] * (1 - k));
+                    }
+                }
+                return emaValues;
+            };
+            
+            const ema12 = ema(12);
+            const ema26 = ema(26);
+            const macdLine = [];
+            const signalLine = [];
+            const histogram = [];
+            
+            for (let i = 0; i < data.length; i++) {
+                macdLine.push(ema12[i] - ema26[i]);
+            }
+            
+            // Calculate signal line (9-period EMA of MACD)
+            const k = 2 / (9 + 1);
+            let signal = macdLine[0];
+            for (let i = 0; i < macdLine.length; i++) {
+                signal = macdLine[i] * k + signal * (1 - k);
+                signalLine.push(signal);
+            }
+            
+            for (let i = 0; i < data.length; i++) {
+                histogram.push(macdLine[i] - signalLine[i]);
+            }
+            
+            return { macd: macdLine, signal: signalLine, histogram: histogram };
+        }
+        
+        // Technical Indicator Calculations
+        
+        // Calculate Moving Average for given period
+        function calculateMovingAverage(data, period) {
+            const prices = data.map(s => typeof s.price === 'number' ? s.price : null);
+            const ma = [];
+            
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period - 1 || prices[i] === null) {
+                    ma.push(null);
+                    continue;
+                }
+                
+                let sum = 0;
+                let count = 0;
+                for (let j = i - period + 1; j <= i; j++) {
+                    if (prices[j] !== null) {
+                        sum += prices[j];
+                        count++;
+                    }
+                }
+                ma.push(count > 0 ? sum / count : null);
+            }
+            
+            return ma;
+        }
+        
+        // Calculate MACD (12, 26, 9)
+        function calculateMACD(data) {
+            const prices = data.map(s => typeof s.price === 'number' ? s.price : null);
+            const ema = (period) => {
+                const k = 2 / (period + 1);
+                let emaValues = [];
+                let currentEma = null;
+                
+                for (let i = 0; i < prices.length; i++) {
+                    if (prices[i] === null) {
+                        emaValues.push(null);
+                        continue;
+                    }
+                    
+                    if (currentEma === null) {
+                        currentEma = prices[i];
+                    } else {
+                        currentEma = (prices[i] - currentEma) * k + currentEma;
+                    }
+                    emaValues.push(currentEma);
+                }
+                return emaValues;
+            };
+            
+            const ema12 = ema(12);
+            const ema26 = ema(26);
+            
+            const macdLine = [];
+            for (let i = 0; i < prices.length; i++) {
+                if (ema12[i] === null || ema26[i] === null) {
+                    macdLine.push(null);
+                } else {
+                    macdLine.push(ema12[i] - ema26[i]);
+                }
+            }
+            
+            // Signal line (9-period EMA of MACD line)
+            const signalLine = ema(9).map((_, i) => {
+                if (i < 8 || macdLine[i] === null) return null;
+                
+                // Calculate 9-period EMA of MACD line
+                let k = 2 / (9 + 1);
+                let sum = 0;
+                for (let j = Math.max(0, i - 8); j <= i; j++) {
+                    if (macdLine[j] !== null) {
+                        sum += macdLine[j];
+                    }
+                }
+                const avg = sum / Math.min(9, i + 1);
+                if (i === 8 || i < 9) return avg;
+                
+                // Use previous signal value for iterative calculation
+                const prevSignal = i > 8 ? (ema12.slice(0, i).map((_, idx) => {
+                    if (idx < 8 || macdLine[idx] === null || macdLine[idx-1] === null) return null;
+                    let k = 2 / (9 + 1);
+                    if (idx === 8) return macdLine.slice(0,9).reduce((a,b)=>a+(b||0),0)/9;
+                    let prev = signalLine[idx-1];
+                    return (macdLine[idx] - prev) * k + prev;
+                })[i-1] : null);
+                return (macdLine[i] - prevSignal) * k + prevSignal;
+            });
+            
+            // Histogram
+            const histogram = macdLine.map((macd, i) => {
+                if (macd === null || signalLine[i] === null) return null;
+                return macd - signalLine[i];
+            });
+            
+            return { macd: macdLine, signal: signalLine, histogram: histogram };
+        }
+        
+        // Chart instance
+        let chart = null;
+        let indicatorsEnabled = { ma: true, macd: true };
+
         // Fetch stock data function
         async function fetchStocks() {
             try {
@@ -843,27 +1134,94 @@
             const labels = data.map(s => s.ticker);
             const prices = data.map(s => typeof s.price === 'number' ? s.price : 0);
             
+            // Build datasets
+            const datasets = [{
+                label: 'Price ($)',
+                data: prices,
+                backgroundColor: prices.map((p, i) => {
+                    if (data[i].prev_close === 'N/A' || data[i].price === 'N/A') return '#3b82f6';
+                    const change = ((p - data[i].prev_close) / data[i].prev_close * 100);
+                    return change >= 0 ? '#10b981' : '#ef4444';
+                }),
+                borderRadius: 6,
+                borderSkipped: false
+            }];
+            
+            // Add MA lines if enabled
+            if (showMA) {
+                maPeriods.forEach(period => {
+                    const maData = calculateMA(prices, period);
+                    datasets.push({
+                        label: `MA${period}`,
+                        data: maData,
+                        type: 'line',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        tension: 0.3,
+                        fill: false
+                    });
+                });
+            }
+            
+            // Add MACD if enabled
+            if (showMACD) {
+                const macdData = calculateMACD(prices);
+                datasets.push({
+                    label: 'MACD',
+                    data: macdData.macd,
+                    type: 'line',
+                    borderColor: '#f59e0b',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: false
+                });
+                datasets.push({
+                    label: 'MACD Signal',
+                    data: macdData.signal,
+                    type: 'line',
+                    borderColor: '#8b5cf6',
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: false
+                });
+                datasets.push({
+                    label: 'MACD Histogram',
+                    data: macdData.histogram,
+                    type: 'bar',
+                    backgroundColor: macdData.histogram.map(v => v >= 0 ? '#10b981' : '#ef4444'),
+                    borderColor: macdData.histogram.map(v => v >= 0 ? '#10b981' : '#ef4444'),
+                    borderWidth: 1,
+                    order: 999
+                });
+            }
+            
             chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Price ($)',
-                        data: prices,
-                        backgroundColor: prices.map((p, i) => {
-                            if (data[i].prev_close === 'N/A' || data[i].price === 'N/A') return '#3b82f6';
-                            const change = ((p - data[i].prev_close) / data[i].prev_close * 100);
-                            return change >= 0 ? '#10b981' : '#ef4444';
-                        }),
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: true
+                    },
                     plugins: {
-                        legend: { display: false },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#e0e6ed',
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                boxHeight: 8
+                            }
+                        },
                         tooltip: {
                             backgroundColor: '#13192b',
                             titleColor: '#e0e6ed',
@@ -1045,6 +1403,30 @@
             
             // Refresh button
             document.getElementById('refresh-btn').addEventListener('click', fetchStocks);
+            
+            // Indicator toggle buttons
+            document.getElementById('toggle-ma-btn').addEventListener('click', function() {
+                showMA = !showMA;
+                this.classList.toggle('active');
+                fetchStocks();
+            });
+            
+            document.getElementById('toggle-macd-btn').addEventListener('click', function() {
+                showMACD = !showMACD;
+                this.classList.toggle('active');
+                fetchStocks();
+            });
+            
+            // Checkbox toggles
+            document.getElementById('toggle-ma-checkbox').addEventListener('change', function() {
+                showMA = this.checked;
+                fetchStocks();
+            });
+            
+            document.getElementById('toggle-macd-checkbox').addEventListener('change', function() {
+                showMACD = this.checked;
+                fetchStocks();
+            });
         });
     </script>
 </body>
