@@ -316,6 +316,31 @@ def get_news(ticker):
     return jsonify({'ticker': ticker, 'news': news})
 
 
+@app.route('/api/news/headlines')
+def get_headlines():
+    """API endpoint for global headlines from news-headlines.py sources"""
+    try:
+        import sys
+        import os
+        # Add parent directory to path for news-headlines.py import
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        import news_headlines
+        
+        headlines = news_headlines.fetch_headlines()
+        news_items = []
+        for category, items in headlines.items():
+            for item in items:
+                news_items.append({
+                    'title': item,
+                    'category': category,
+                    'url': ''
+                })
+        
+        return jsonify({'headlines': news_items, 'timestamp': datetime.now().isoformat()})
+    except Exception as e:
+        return jsonify({'error': str(e), 'headlines': []})
+
+
 if __name__ == '__main__':
     import sys
     port = 5001
