@@ -6,6 +6,7 @@ import time
 import threading
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -323,7 +324,7 @@ def get_headlines():
         import sys
         import os
         # Add parent directory to path for news-headlines.py import
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        sys.path.insert(0, os.path.dirname(__file__))
         import news_headlines
         
         headlines = news_headlines.fetch_headlines()
