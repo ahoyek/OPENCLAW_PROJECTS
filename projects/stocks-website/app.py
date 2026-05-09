@@ -47,8 +47,19 @@ def get_stock_data_cached(ticker):
         except Exception:
             pass
         
-        # Only fall back to history if fast_info failed
-        if price == 'N/A':
+        # Get OHLC from fast_info if available (these fields exist in fast_info)
+        try:
+            ohlc = {
+                'open': round(float(stock.fast_info.get('open')), 2) if stock.fast_info.get('open') is not None else 'N/A',
+                'high': round(float(stock.fast_info.get('dayHigh')), 2) if stock.fast_info.get('dayHigh') is not None else 'N/A',
+                'low': round(float(stock.fast_info.get('dayLow')), 2) if stock.fast_info.get('dayLow') is not None else 'N/A',
+                'close': round(float(stock.fast_info.get('lastPrice')), 2) if stock.fast_info.get('lastPrice') is not None else 'N/A',
+            }
+        except Exception:
+            pass  # Keep N/A values if fast_info OHLC fails
+        
+        # Fallback to history if fast_info failed for price or OHLC
+        if price == 'N/A' or ohlc['close'] == 'N/A':
             try:
                 # Get last 2 days of history in one call (with timeout)
                 hist = stock.history(period="2d", timeout=5)
