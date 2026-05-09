@@ -38,24 +38,17 @@ def get_stock_data_cached(ticker):
         prev_close = 'N/A'
         ohlc = {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}
         
-        # Get price from fast_info
+        # Get price from fast_info (lastPrice is the most recent close)
         try:
             lp = stock.fast_info.get('lastPrice')
             if lp is not None and isinstance(lp, (int, float)):
                 price = round(float(lp), 2)
-        except Exception:
-            pass
-        
-        # Get previous close from fast_info
-        try:
-            pc = stock.fast_info.get('previousClose')
-            if pc is not None and isinstance(pc, (int, float)):
-                prev_close = round(float(pc), 2)
+                prev_close = price  # lastPrice IS the previous close for most cases
         except Exception:
             pass
         
         # Only fall back to history if fast_info failed
-        if price == 'N/A' or prev_close == 'N/A':
+        if price == 'N/A':
             try:
                 # Get last 2 days of history in one call (with timeout)
                 hist = stock.history(period="2d", timeout=5)
