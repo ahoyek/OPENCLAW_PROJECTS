@@ -29,52 +29,71 @@ NEWS_CACHE = {}
 NEWS_CACHE_TIMEOUT = 240  # 4 minutes
 
 def get_stock_data_cached(ticker):
-    """Cached stock data fetch with LRU cache"""
+    """Cached stock data fetch - uses fast_info first, history as minimal fallback"""
     try:
         stock = yf.Ticker(ticker)
-        info = stock.fast_info
         
-        # Get OHLC from history (most recent day)
-        hist = stock.history(period="1d")
+        # Try fast_info first (much faster, no extra HTTP requests needed)
+        price = 'N/A'
+        prev_close = 'N/A'
+        ohlc = {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}
         
-        # Try fast_info first, fall back to history
-        # Use camelCase keys from fast_info (snake_case triggers API calls that may fail)
-        price = None
+        # Get price from fast_info
         try:
-            price = info.get('lastPrice')
+            lp = stock.fast_info.get('lastPrice')
+            if lp is not None and isinstance(lp, (int, float)):
+                price = round(float(lp), 2)
         except Exception:
             pass
         
-        if price is None and len(hist) > 0:
-            price = hist.iloc[-1]['Close']
+        # Get previous close from fast_info
+        try:
+            pc = stock.fast_info.get('previousClose')
+            if pc is not None and isinstance(pc, (int, float)):
+                prev_close = round(float(pc), 2)
+        except Exception:
+            pass
         
-        # Get OHLC from history
-        if len(hist) > 0:
-            row = hist.iloc[-1]
-            ohlc = {
-                'open': round(row['Open'], 2) if not pd.isna(row['Open']) else 'N/A',
-                'high': round(row['High'], 2) if not pd.isna(row['High']) else 'N/A',
-                'low': round(row['Low'], 2) if not pd.isna(row['Low']) else 'N/A',
-                'close': round(row['Close'], 2) if not pd.isna(row['Close']) else 'N/A',
-            }
-        else:
-            ohlc = {'open': 'N/A', 'high': 'N/A', 'low': 'N/A', 'close': 'N/A'}
-        
-        # Get previous day close
-        hist2 = stock.history(period="2d")
-        prev_close = 'N/A'
-        if len(hist2) >= 2 and not pd.isna(hist2.iloc[0]['Close']):
-            prev_close = round(hist2.iloc[0]['Close'], 2)
+        # Only fall back to history if fast_info failed
+        if price == 'N/A' or prev_close == 'N/A':
+            try:
+                # Get last 2 days of history in one call (with timeout)
+                hist = stock.history(period="2d", timeout=5)
+                
+                if len(hist) >= 2:
+                    # prev_close is from the first row (older)
+                    if prev_close == 'N/A':
+                        pc = hist.iloc[0]['Close']
+                        if not pd.isna(pc):
+                            prev_close = round(float(pc), 2)
+                    
+                    # price is from the last row (newer)
+                    if price == 'N/A':
+                        lp = hist.iloc[-1]['Close']
+                        if not pd.isna(lp):
+                            price = round(float(lp), 2)
+                
+                # Get OHLC from most recent day if available
+                if len(hist) > 0:
+                    row = hist.iloc[-1]
+                    ohlc = {
+                        'open': round(float(row['Open']), 2) if not pd.isna(row['Open']) else 'N/A',
+                        'high': round(float(row['High']), 2) if not pd.isna(row['High']) else 'N/A',
+                        'low': round(float(row['Low']), 2) if not pd.isna(row['Low']) else 'N/A',
+                        'close': round(float(row['Close']), 2) if not pd.isna(row['Close']) else 'N/A',
+                    }
+            except Exception:
+                pass  # Keep N/A values if history fails
         
         # Calculate daily change and percent change
         change = 'N/A'
         pct_change = 'N/A'
-        if isinstance(price, (int, float)) and prev_close != 'N/A':
+        if isinstance(price, (int, float)) and prev_close != 'N/A' and float(prev_close) != 0:
             change = round(float(price) - float(prev_close), 2)
-            pct_change = round((change / float(prev_close)) * 100, 2) if float(prev_close) != 0 else 'N/A'
+            pct_change = round((change / float(prev_close)) * 100, 2)
         
         return {
-            'price': round(price, 2) if isinstance(price, (int, float)) else price,
+            'price': price,
             'prev_close': prev_close,
             'change': change,
             'pct_change': pct_change,
